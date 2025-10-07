@@ -93,7 +93,7 @@ __delete_bot_entries(action) -> (
 );
 
 __on_player_command(player, command) -> (
-    // 测试命令是否以/player开头，如果是，读取commands以便后续使用
+    // Test if the command starts with /player, if so, read commands for later use
     if(command~'^player',
     logger('[logout_bot App] Player sends a /player command.');
         if (read_file('commands', 'json');,
@@ -103,7 +103,7 @@ __on_player_command(player, command) -> (
         );
     );
     
-    // 存储控制假人持续做某事的事件
+    // Save events that control the bot to do something continuously
     if (command~'^player .* continuous' || command~'^player .* interval' || command~'^player .* move' || command~'^player .* sneak' || command~'^player .* sprint',
         is_controlling_real_player = false;
         for (filter(player('all'), _~'player_type' != 'fake'),
@@ -121,6 +121,7 @@ __on_player_command(player, command) -> (
     // ****** Debug ******
     
     // 当使用/player .. stop或/player .. kill时，清除对应假人所有的已存储事件
+    // When using /player .. stop or /player .. kill, clear all stored events for the corresponding bot
     if (command~'^player .* stop',
         player = command~'^player (.*) stop';
         c_for(i = 0, i < length(commands), i+=1,
@@ -142,7 +143,7 @@ __on_player_command(player, command) -> (
         write_file('commands', 'json', commands);
     );
 
-    // /player .. unsneak; /player .. unsprint 处理
+    // /player .. unsneak; /player .. unsprint handling
     if (command~'^player .* unsneak',
         player = command~'^player (.*) unsneak';
         c_for(i = 0, i < length(commands), i+=1,
@@ -164,7 +165,7 @@ __on_player_command(player, command) -> (
         write_file('commands', 'json', commands);
     );
 
-    // 保存玩家状态
+    // Save player state when spawning or killing a bot
     if (command~'^player .* spawn' || command~'^player .* kill',
         schedule(20, '__save_players');
     );
@@ -173,7 +174,11 @@ __on_player_command(player, command) -> (
         print('\n游戏将会在所有真人玩家退出并重新加入时，运行以下命令：\n --------');
         print(join(',\n', commands));
         print(' --------');
-        print('若有不希望重进时运行的命令，对相应玩家使用/player <ID> stop即可。\n')
+        print('若有不希望重进时运行的命令，对相应玩家使用/player <ID> stop即可（区分大小写）。\n')
+        print('\nThe game will run the following commands when the first player joins the game: \n --------');
+        print(join(',\n', commands));
+        print(' --------');
+        print('If the above list has any unwanted commands, use /player <ID> stop for corresponding bot (case sensitive).\n')
     );
 );
 
