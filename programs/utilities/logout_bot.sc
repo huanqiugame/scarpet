@@ -1,7 +1,32 @@
+// Created by huanqiugame (https://github.com/huanqiugame) on GitHub on Oct 7, 2025
+// It logs out bots, preserving all actions, locations, and game modes, when all real players leave. It logs in bots, resuming their actions, locations, and game modes, when all real players rejoin.
+// This is a modified version of the original keepalive app by Ghoulboy78.
+
 __config() -> {
     'scope' -> 'global',
     'command_permission' -> 'all',
 };
+
+global_FAKE_PLAYER_LOG_OUT_TIME_OUT = 300; // the duration, in seconds, that fake players wait to log out if all real players left
+
+global_translations = {
+    'en_us' -> {
+        'list_commands.pretext' -> '\nThe game will run the following commands when the first player joins the game:\n',
+        'list_commands.posttext' -> 'If the above list has any unwanted commands, use /player <ID> stop for corresponding bot (case sensitive).\n',
+    },
+    'zh_cn' -> {
+        'list_commands.pretext' -> '\n游戏将会在所有真人玩家退出并重新加入时，运行以下命令：\n',
+        'list_commands.posttext' -> '若有不希望重进时运行的命令，对相应假人使用/player <ID> stop即可（区分大小写）。\n',
+    },
+};
+
+get_translation(translation_key) -> (
+    language = 'en_us';
+    if(has(global_translations, player()~'language'),
+        language = player()~'language';
+    );
+    global_translations:language:translation_key;
+);
 
 spawn_players() -> (
     __spawn_players();
@@ -20,7 +45,6 @@ run_player_commands() -> (
 );
 
 __spawn_players() -> (
-   logger('[logout_bot App] Running "spawn_players()"...');
    data = load_app_data();
    if (data && data:'players',
       data = parse_nbt(data:'players');
@@ -33,12 +57,10 @@ __spawn_players() -> (
 //         modify(player(_:'name'), 'flying', _:'fly')
       );
    );
-   schedule(20, 'run_player_commands');
-   logger('[logout_bot App] Finish "spawn_players()"');
+   schedule(30, 'run_player_commands');
 );
 
 __save_players() -> (
-   logger('[logout_bot App] Running "save_players()"...');
    data = nbt('{players:[]}');
    saved = [];
    if (read_file('commands', 'json');,
@@ -62,7 +84,6 @@ __save_players() -> (
    );
    store_app_data(data);
    if (saved, logger('info', '[logout_bot App] Saved '+saved+' for next startup'));
-   logger('[logout_bot App] Finish "save_players()"...');
 );
 
 // __on_server_starts() -> (
@@ -73,10 +94,6 @@ __save_players() -> (
 // __on_server_shuts_down() -> (
 //   task('__save_players');
 // );
-
-get_commands() -> (
-    print(read_file('commands', 'json'));
-);
 
 __delete_bot_entries(action) -> (
     if (!action, action = '';);
@@ -95,7 +112,6 @@ __delete_bot_entries(action) -> (
 __on_player_command(player, command) -> (
     // Test if the command starts with /player, if so, read commands for later use
     if(command~'^player',
-    logger('[logout_bot App] Player sends a /player command.');
         if (read_file('commands', 'json');,
             commands = read_file('commands', 'json');,
             // else
@@ -104,7 +120,7 @@ __on_player_command(player, command) -> (
     );
     
     // Save events that control the bot to do something continuously
-    if (command~'^player .* continuous' || command~'^player .* interval' || command~'^player .* move' || command~'^player .* sneak' || command~'^player .* sprint',
+    if (command~'^player .* continuous' || command~'^player .* interval' || command~'^player .* move' || command~'^player .* sneak' || command~'^player .* sprint' || command~'^player .* perTick' || command~'^player .* randomly',
         is_controlling_real_player = false;
         for (filter(player('all'), _~'player_type' != 'fake'),
             if (command~_,
@@ -117,11 +133,7 @@ __on_player_command(player, command) -> (
         );
     );
     
-    // ****** Debug ******
-    // ****** Debug ******
-    
-    // 当使用/player .. stop或/player .. kill时，清除对应假人所有的已存储事件
-    // When using /player .. stop or /player .. kill, clear all stored events for the corresponding bot
+    // When using '/player .. stop' or '/player .. kill', clear all stored events for the corresponding bot
     if (command~'^player .* stop',
         player = command~'^player (.*) stop';
         c_for(i = 0, i < length(commands), i+=1,
@@ -143,7 +155,7 @@ __on_player_command(player, command) -> (
         write_file('commands', 'json', commands);
     );
 
-    // /player .. unsneak; /player .. unsprint handling
+    // '/player .. unsneak'; '/player .. unsprint' handling
     if (command~'^player .* unsneak',
         player = command~'^player (.*) unsneak';
         c_for(i = 0, i < length(commands), i+=1,
@@ -171,32 +183,36 @@ __on_player_command(player, command) -> (
     );
     
     if(command~'^player',
-        print('\n游戏将会在所有真人玩家退出并重新加入时，运行以下命令：\n --------');
-        print(join(',\n', commands));
+        print(get_translation('list_commands.pretext'));
         print(' --------');
-        print('若有不希望重进时运行的命令，对相应玩家使用/player <ID> stop即可（区分大小写）。\n')
-        print('\nThe game will run the following commands when the first player joins the game: \n --------');
-        print(join(',\n', commands));
-        print(' --------');
-        print('If the above list has any unwanted commands, use /player <ID> stop for corresponding bot (case sensitive).\n')
+        print(join('\n', commands));
+        print(' --------\n');
+        print(get_translation('list_commands.posttext'))
     );
 );
 
-__kick_fake_players() -> (
-    logger(filter(player('all'), _~'player_type' != 'fake'));
-    if (length(filter(player('all'), _~'player_type' != 'fake')) == 0,
-        for (filter(player('all'), _~'player_type' == 'fake'),
-            run(str('/player %s kill', _~'name'))
-        );
-    );
-);
+global_last_player_disconnect_at = 0;
+
 __on_player_disconnects(player, reason) -> (
-    logger('[logout_bot App] Running "player_disconnects"...');
     if (player~'player_type' != 'fake',
         // __save_players();
-        schedule(10, '__kick_fake_players');
+        schedule(20, _() -> ( // wait one tick to make sure player has properly logged out
+            if (length(filter(player('all'), _~'player_type' != 'fake')) == 0,
+                logger('[logout_bot App] No real players exist. Fake players are scheduled to log out soon...');
+                global_last_player_disconnect_at = time(); // record the time last player disconnects
+                // wait for a certain time to check
+                schedule(global_FAKE_PLAYER_LOG_OUT_TIME_OUT * 20 - 20, _(last_player_disconnect_at) -> (
+                    // if no real players exist AND after waiting for a certain time, the time recorded is still the same (meaning no player logged in during this period), log out fake players
+                    if (length(filter(player('all'), _~'player_type' != 'fake')) == 0 && last_player_disconnect_at == global_last_player_disconnect_at,
+                        logger('[logout_bot App] Considering no real players exist for ' + global_FAKE_PLAYER_LOG_OUT_TIME_OUT + ' seconds, log out bots.');
+                        for (filter(player('all'), _~'player_type' == 'fake'),
+                            run(str('/player %s kill', _~'name'))
+                        );
+                    );
+                ), global_last_player_disconnect_at);
+            );
+        ));
     );
-    logger('[logout_bot App] Finish "player_disconnects"');
 );
 
 __on_player_dies(player) -> (
@@ -219,12 +235,10 @@ __on_player_dies(player) -> (
 );
 
 __on_player_connects(player) -> (
-    logger('[logout_bot App] Running "player_connects"...');
     if (player~'player_type' != 'fake',
         fake_players = filter(player('all'), _~'player_type' == 'fake');
         if (length(fake_players) == 0,
             __spawn_players();
         );
     );
-    logger('[logout_bot App] Finish "player_connects"...');
 );
