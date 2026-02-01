@@ -1,26 +1,74 @@
 // Created by huanqiugame (https://github.com/huanqiugame) on GitHub on Oct 7, 2025
-// This is a survival QoL app that allows you to set warp locations and teleport to them, and categorize your warp locations for better organization.
+// This is a survival QoL app that allows you to set warp locations and teleport to them, and categorize your warp locations for better organization. Optimized for Bedrock players.
 // # Usage
+// To enable this app, you need to type `/script load warps.sc` in chat. DON'T ADD 'global' TO THE END OF THE COMMAND! This will break the app.
 // - Adding a warp location: `/warps s <name> <category> <icon_item>`.
 // - Deleting a warp locations: `/warps d <name> <category>`.
 // - Viewing warp locations: `/warps`. This will open a big chest GUI, with the top row items representing the warp categories, and the rest representing the warp locations. Left clicking a warp location will teleport you to it.
 // You can edit the name of this app to change the root command name for better access.
 // e.g. Changing the app file to "wa.sc" will make all the command above starting with /wa.
 // # Notes
-// - This app is currently Chinese only.
 // - This app can be used by Bedrock players if your Java server has a compatibility layer such as Geyser for Bedrock players to join. Try throwing away the warp-representative item as a substitute for left clicking.
 // - This app has another version that stores warp locations separately on a player basis: homes.sc. This (each player has their own warp locations and categories) is the only difference, and its usage is the same except the leading command name.
 
-translations -> {
-    'English' -> {
-        'startup' -> '启动',
-        'set_warp' -> '设置路径点',
-        'delete_warp' -> '删除路径点',
-        'warp_set_success' -> '已保存路径点“%s”坐标 [%s, %s, %s]。',
-        'warp_delete_success' -> '已删除路径点“%s”。',
-        'warp_delete_fail' -> '未找到路径点“%}
-    }
+global_translations = {
+    'en_us' -> {
+        'set_warp.pretext' -> 'add',
+        'set_warp.dimension_overworld' -> 'Overworld',
+        'set_warp.dimension_the_nether' -> 'The Nether',
+        'set_warp.dimension_the_end' -> 'The End',
+        'set_warp.success' -> 'You have saved %s location at [%s, %s, %s] in category "%s" as warp "%s".',
+        'set_warp.success_console' -> '[Warps App] "%s" has saved %s location at [%s, %s, %s] in category "%s" as warp "%s".',
+        'set_warp.success_actionbar' -> 'Saved "%s".',
+        'delete_warp.success' -> 'In category "%s", the warp "%s" has been deleted.',
+        'delete_warp.success_console' -> '[Warps App] In category "%s", the warp "%s" has been deleted by "%s".',
+        'delete_warp.category_deleted' -> 'Since there are no warps left in category "%s", "%s" has been deleted.',
+        'delete_warp.category_deleted_console' -> '[Warps App] Since there are no warps left in category "%s", "%s" has been deleted.',
+        'delete_warp.failure' -> 'Category "%s" does not contain the warp "%s".',
+        'check_move_condition.condition_not_met' -> 'Failed to %s since you are not in survival mode!',
+        'test_for_player_move.waiting_text1' -> 'Waiting', // has space suffix
+        'test_for_player_move.waiting_text2' -> 'seconds to', // has space prefix
+        'test_for_player_move.waiting_text3' -> ', please do not move...',
+        'test_for_player_move.failure' -> 'Failed to %s since you moved!',
+        'startup.ui_title' -> 'Warps',
+        'startup.teleport_call_to_check_move_condition_pretext' -> 'teleport you to', // used to replace the %s in the string "check_move_condition.condition_not_met" and "check_move_condition.failure", and is inserted between "test_for_player_move.waiting_text2" and "test_for_player_move.waiting_text3"
+        'startup.teleport_success_pretext' -> 'You have teleported to %s.',
+        'update_screen.next_page' -> 'Next Page',
+        'update_screen.previous_page' -> 'Previous Page',
+    },
+    'zh_cn' -> {
+        'set_warp.pretext' -> '为你添加',
+        'set_warp.dimension_overworld' -> '主世界',
+        'set_warp.dimension_the_nether' -> '下界',
+        'set_warp.dimension_the_end' -> '末地',
+        'set_warp.success' -> '你已将“%s”坐标 [%s, %s, %s] 的位置保存为“%s”类别下的路径点“%s”。',
+        'set_warp.success_console' -> '[Warps App] “%s”已将“%s”坐标 [%s, %s, %s] 的位置保存为“%s”类别下的路径点“%s”。',
+        'set_warp.success_actionbar' -> '已保存“%s”。',
+        'delete_warp.success' -> '你已删除“%s”类别下的路径点“%s”。',
+        'delete_warp.success_console' -> '[Warps App] “%s”已删除“%s”类别下的路径点“%s”。',
+        'delete_warp.category_deleted' -> '由于“%s”类别下已无路径点，已删除“%s”。',
+        'delete_warp.category_deleted_console' -> '[Warps App] 由于“%s”类别下已无路径点，已删除“%s”。',
+        'delete_warp.failure' -> '没有找到“%s”类别下的路径点“%s”。',
+        'check_move_condition.condition_not_met' -> '你并不处于生存模式！无法%s。',
+        'test_for_player_move.waiting_text1' -> '将在', // 有空格后缀
+        'test_for_player_move.waiting_text2' -> '秒后', // 有空格前缀
+        'test_for_player_move.waiting_text3' -> '，请不要移动……',
+        'test_for_player_move.failure' -> '你移动了！取消%s。',
+        'startup.ui_title' -> '传送点',
+        'startup.teleport_call_to_check_move_condition_pretext' -> '将你传送至', // 用于替换 "check_move_condition.condition_not_met" 和 "check_move_condition.failure" 中的 %s，以及插入 "test_for_player_move.waiting_text2" 和 "test_for_player_move.waiting_text3" 之间
+        'startup.teleport_success_pretext' -> '你已传送至 %s。',
+        'update_screen.next_page' -> '下一页',
+        'update_screen.previous_page' -> '上一页',
+    },
 };
+
+get_translation(translation_key) -> (
+    language = 'en_us';
+    if(has(global_translations, player()~'language'),
+        language = player()~'language';
+    );
+    global_translations:language:translation_key;
+);
 
 __config() -> {
     'strict' -> false,
@@ -28,9 +76,9 @@ __config() -> {
     'command_permission' -> 'all',
     'commands' -> {
         '' -> 'startup',
-        's <name>' -> ['set_warp', 'default', ['ender_pearl',1,'{count:1,id:"minecraft:ender_pearl"}']],
-        's <name> <category>' -> ['set_warp', ['ender_pearl',1,'{count:1,id:"minecraft:ender_pearl"}']],
-        's <name> <category> <item>' -> 'set_warp',
+        's <name>' -> ['try_set_warp', 'default', ['ender_pearl',1,'{count:1,id:"minecraft:ender_pearl"}']],
+        's <name> <category>' -> ['try_set_warp', ['ender_pearl',1,'{count:1,id:"minecraft:ender_pearl"}']],
+        's <name> <category> <item>' -> 'try_set_warp',
         'd <name>' -> ['delete_warp', 'default'],
         'd <name> <category>' -> 'delete_warp',
     },
@@ -38,7 +86,7 @@ __config() -> {
         'name' -> {
             'type' -> 'string',
             'suggester' -> _(args) -> (
-                sugg = ['""', '"---------- 输入路径点名称 ----------"', '"- 全英单词如MyHome可不带引号，否则都带 -"'];
+                sugg = [];
                 warps_data = read_file('warps', 'json');
                 for (keys(warps_data),
                     for (keys(warps_data:_),
@@ -51,7 +99,7 @@ __config() -> {
         'category' -> {
             'type' -> 'string',
             'suggester' -> _(args) -> (
-                sugg = ['""', '"---------- 输入路径点类别 ----------"', '"- 全英单词如MyCate可不带引号，否则都带 -"', '"default"'];
+                sugg = ['"default"'];
                 for (keys(read_file('warps', 'json')),
                     if (_ != 'default',
                         sugg += '"'+_+'"';
@@ -75,6 +123,10 @@ get_warps_data() -> (
     warps_data;
 );
 
+write_warps_data(warps_data) -> (
+    write_file('warps', 'json', warps_data);
+);
+
 global_current_warp_page = 0;     // index starts at 0
 global_current_category_page = 0; // index starts at 0
 global_current_category = sort(keys(get_warps_data())):0;
@@ -89,56 +141,73 @@ global_current_page_category_count = 0;
 global_saved_screen_state = [];
 global_update_items = ['warps', 'categories']; // available: 'warps' and 'categories'
 
+try_set_warp(name, category, item) -> (
+    check_move_condition(
+        get_translation('set_warp.pretext'),
+        name,
+        1000,
+        'set_warp',
+        [name, category, item]
+    )
+);
 set_warp(name, category, item) -> (
-    if (test_for_player_move('为你添加路径点 ' + format('l ' + name), 1000) == false,
-        // get player data
-        warps_data = get_warps_data();
-        warp_data = {};
-        warp_dimension = player()~'dimension';
-        warp_location = player()~'location';
-        if (!item,
-            item = ['ender_pearl',1,'{count:1,id:"minecraft:ender_pearl"}']
+    // get player data
+    warps_data = get_warps_data();
+    warp_data = {};
+    warp_dimension = player()~'dimension';
+    warp_location = player()~'location';
+    if (!item,
+        item = ['ender_pearl',1,'{count:1,id:"minecraft:ender_pearl"}']
+    );
+    item:2 = decode_json(item:2);
+    if (!item:2:'components',
+        item:2:'components' = {'minecraft:custom_name' -> {'text' -> name, 'italic' -> false}};
+        , // else
+        item:2:'components':'minecraft:custom_name' = {'text' -> name, 'italic' -> false};
+        if (item:2:'components':'minecraft:enchantment_glint_override' == '1b',
+            item:2:'components':'minecraft:enchantment_glint_override' = 1;
         );
-        item:2 = decode_json(item:2);
-        if (!item:2:'components',
-            item:2:'components' = {'minecraft:custom_name' -> {'text' -> name, 'italic' -> false}};
-            , // else
-            item:2:'components':'minecraft:custom_name' = {'text' -> name, 'italic' -> false};
-            if (item:2:'components':'minecraft:enchantment_glint_override' == '1b',
-                item:2:'components':'minecraft:enchantment_glint_override' = 1;
-            );
-        );
-        item:2 = encode_json(item:2);
-        warp_data:'display_item' = item;
-        warp_data:'location' = warp_location;
-        warp_data:'dimension' = warp_dimension;
-        if (!warps_data:category,
-            warps_data:category = {};
-        );
-        warps_data:category:name = warp_data;
-        
-        // translate dimension name
-        if (warp_dimension == 'overworld',
-            warp_dimension_translation = '主世界';
-        );
-        if (warp_dimension == 'the_nether',
-            warp_dimension_translation = '下界';
-        );
-        if (warp_dimension == 'the_end',
-            warp_dimension_translation = '末地';
-        );
-        if (warp_dimension != 'overworld' && warp_dimension != 'the_nether' && warp_dimension != 'the_end',
-            warp_dimension_translation = warp_dimension;
-        );
-        write_file('warps', 'json', warps_data);
-        print(format('db [Warps] ', str('l 你已将“%s”坐标 [%s, %s, %s] 的位置保存为“%s”类别下的路径点“%s”。', warp_dimension_translation, warp_location:0, warp_location:1, warp_location:2, category, name)));
-        logger('info', str('[Warps App] “%s”已将“%s”坐标 [%s, %s, %s] 的位置保存为“%s”类别下的路径点“%s”。', player()~'name', warp_dimension_translation, warp_location:0, warp_location:1, warp_location:2, category, name));
-        display_title(player(), 'actionbar', format('l 已保存 ' + name + ' 。'), 0, 5, 20);
-        global_update_items = ['warps', 'categories', 'display'];
+    );
+    item:2 = encode_json(item:2);
+    warp_data:'display_item' = item;
+    warp_data:'location' = warp_location;
+    warp_data:'dimension' = warp_dimension;
+    if (!warps_data:category,
+        warps_data:category = {};
+    );
+    warps_data:category:name = warp_data;
     
-        if (global_current_category == null,
-            global_current_category = category;
-        );
+    // translate dimension name
+    if (warp_dimension == 'overworld',
+        warp_dimension_translation = get_translation('set_warp.dimension_overworld');
+    );
+    if (warp_dimension == 'the_nether',
+        warp_dimension_translation = get_translation('set_warp.dimension_the_nether');
+    );
+    if (warp_dimension == 'the_end',
+        warp_dimension_translation = get_translation('set_warp.dimension_the_end');
+    );
+    if (warp_dimension != 'overworld' && warp_dimension != 'the_nether' && warp_dimension != 'the_end',
+        warp_dimension_translation = warp_dimension;
+    );
+    write_warps_data(warps_data);
+    print(format('db [Warps] ', str('l ' + get_translation('set_warp.success'), warp_dimension_translation, warp_location:0, warp_location:1, warp_location:2, category, name)));
+    logger('info', str(get_translation('set_warp.success_console'), player()~'name', warp_dimension_translation, warp_location:0, warp_location:1, warp_location:2, category, name));
+    display_title(
+        player(),
+        'actionbar',
+        format(
+            str(
+                'l ' + get_translation('set_warp.success_actionbar'),
+                name
+            )
+        ),
+        0, 5, 20
+    );
+    global_update_items = ['warps', 'categories', 'display'];
+
+    if (global_current_category == null,
+        global_current_category = category;
     );
 );
 
@@ -146,51 +215,72 @@ delete_warp(name, category) -> (
     warps_data = get_warps_data();
     if (warps_data:category:name,
         delete(warps_data:category:name);
-        print(format('db [Warps] ', str('l 你已删除“%s”类别下的路径点“%s”。', category, name)));
-        logger('info', str('[Warps] “%s”已删除“%s”类别下的路径点“%s”。', player()~'name', category, name));
+        print(format('db [Warps] ', str('l ' + get_translation('delete_warp.success'), category, name)));
+        logger('info', str(get_translation('delete_warp.success_console'), player()~'name', category, name));
         if (warps_data:category == {},
             delete(warps_data:category);
-            print(format('db [Warps] ', str('l 由于“%s”类别下已无路径点，已删除“%s”。', category, category)));
-            logger('info', str('[Warps] 由于“%s”类别下已无路径点，已删除“%s”。', category, category));
+            print(format('db [Warps] ', str('l ' + get_translation('delete_warp.category_deleted'), category, category)));
+            logger('info', str(get_translation('delete_warp.category_deleted_console'), category, category));
             if (global_current_category == category,
                 global_current_category = sort(keys(warps_data)):0;
             );
         );
-        write_file('warps', 'json', warps_data);
+        write_warps_data(warps_data);
         global_update_items = ['warps'];
         , // else
-        print(format('db [Warps] ', str('r 没有找到“%s”类别下的路径点“%s”。', category, name)));
+        print(format('db [Warps] ', str('r ' + get_translation('delete_warp.failure'), category, name)));
     );
     global_update_items = ['warps', 'categories', 'display'];
 );
 
-test_for_player_move(display_text, time_delay) -> (
-    current_time = time();
-    current_location = player()~'location';
+check_move_condition(display_text, highlight_text, time_delay, function_name, function_args) -> (
     if (player()~'gamemode' == 'survival' || player()~'gamemode' == 'creative',
-        player_moved = false;
+        test_for_player_move(
+            time(),
+            player()~'location',
+            display_text,
+            highlight_text,
+            time_delay,
+            function_name,
+            function_args
+        ); // call function
         , // else
-        player_moved = true;
-        display_title(player(), 'actionbar', format('r 你并不处于生存模式！无法' + display_text + '。'), 0, 5, 20);
+        display_title(player(), 'actionbar', format(str('r ' + get_translation('check_move_condition.condition_not_met'), display_text)), 0, 5, 20);
+        false; // returns false
     );
-    if (player_moved == false,
-        while(time() - current_time <= time_delay,
-            if (abs(current_location:0 - player()~'location':0) < 0.5 && abs(current_location:1 - player()~'location':1) < 1 && abs(current_location:2 - player()~'location':2) < 0.5,
-                display_title(player(), 'actionbar', '将在 ' + format('l ' + (time_delay / 1000.0 - round((time() - current_time) / 100) / 10)) + ' 秒后' + display_text + '，请不要移动……', 0, 5, 20);
-                game_tick(50);
-                , // else
-                player_moved = true;
-                display_title(player(), 'actionbar', format('r 你移动了！取消' + display_text + '。'), 0, 5, 20);
-                break();
-            );
+);
+
+test_for_player_move(current_time, current_location, display_text, highlight_text, time_delay, function_name, function_args) -> (
+    if (time() - current_time <= time_delay,
+        if(
+            abs(current_location:0 - player()~'location':0) < 0.5 &&
+            abs(current_location:1 - player()~'location':1) < 1 &&
+            abs(current_location:2 - player()~'location':2) < 0.5
+        , // if true then
+            display_title(player(), 'actionbar', format(
+                'w ' + get_translation('test_for_player_move.waiting_text1') + ' ', 
+                'l ' + str(time_delay / 1000.0 - round((time() - current_time) / 100) / 10),
+                'w  ' + get_translation('test_for_player_move.waiting_text2') + ' ' + display_text,
+                'l  "' + highlight_text + '"',
+                'w ' + get_translation('test_for_player_move.waiting_text3')
+            ), 0, 5, 20);
+            schedule(1, 'test_for_player_move', current_time, current_location, display_text, highlight_text, time_delay, function_name, function_args);
+            , // else (failed, moved)
+            display_title(player(), 'actionbar', format(str('r ' + get_translation('test_for_player_move.failure'), display_text + ' ' + highlight_text)), 0, 5, 20);
         );
+        , // else (success, not moved)
+        call(function_name, ...function_args);
     );
-    player_moved;
+);
+
+teleport_player(data_location, warp_name) -> (
+    run(str('/execute in minecraft:%s run tp @s %s %s %s %s %s', data_location:'dimension', ...data_location:'location'));
+    display_title(player(), 'actionbar', format('l ' + str(get_translation('startup.teleport_success_pretext'), warp_name)), 0, 5, 20);
 );
 
 startup() -> (
     warp_screen = create_screen(
-        player(), 'generic_9x6', format('eb 传送点'), _(screen, player, action, data) -> (
+        player(), 'generic_9x6', format('eb ' + get_translation('startup.ui_title')), _(screen, player, action, data) -> (
             // update global_current_warp_page
             if (data:'slot' == 53 && global_current_warp_page + 1 < global_warp_page_count && (action == 'pickup' || action == 'quick_move' || action == 'swap' || action == 'throw' || action == 'pickup_all'),
                 global_current_warp_page += 1;
@@ -229,9 +319,12 @@ startup() -> (
                 warp_name = inventory_get(screen, data:'slot'):2:'components':'minecraft:custom_name':'text';
                 data_location = get_warps_data():global_current_category:(inventory_get(screen, data:'slot'):2:'components':'minecraft:custom_name':'text');
                 close_screen(screen);
-                if (test_for_player_move('将你传送至 ' + format('l ' + warp_name), 1500) == false,
-                    run(str('/execute in minecraft:%s run tp @s %s %s %s %s %s', data_location:'dimension', ...data_location:'location'));
-                    display_title(player(), 'actionbar', format('l 你已传送至 ' + warp_name), 0, 5, 20);
+                check_move_condition(
+                    get_translation('startup.teleport_call_to_check_move_condition_pretext'),
+                    warp_name,
+                    1500,
+                    'teleport_player',
+                    [data_location, warp_name]
                 );
             );
 
@@ -332,24 +425,24 @@ update_screen(warp_screen) -> (
     // reuseable
     if (global_update_items~'warps' != null || global_update_items~'display' != null,
         if (global_warp_page_count > 1 && global_current_warp_page + 1 != global_warp_page_count,
-            inventory_set(warp_screen, 53, 1, 'minecraft:arrow', '{components:{"minecraft:custom_name":{italic:false, text:"下一页"}},count:1,id:"minecraft:arrow"}');
+            inventory_set(warp_screen, 53, 1, 'minecraft:arrow', str('{components:{"minecraft:custom_name":{italic:false, text:"%s"}},count:1,id:"minecraft:arrow"}', get_translation('update_screen.next_page')));
             , // else
             inventory_set(warp_screen, 53, 1, 'minecraft:air');
         );
         if (global_current_warp_page > 0,
-            inventory_set(warp_screen, 52, 1, 'minecraft:arrow', '{components:{"minecraft:custom_name":{italic:false, text:"上一页"}},count:1,id:"minecraft:arrow"}');
+            inventory_set(warp_screen, 52, 1, 'minecraft:arrow', str('{components:{"minecraft:custom_name":{italic:false, text:"%s"}},count:1,id:"minecraft:arrow"}', get_translation('update_screen.previous_page')));
             , // else
             inventory_set(warp_screen, 52, 1, 'minecraft:air');
         );
     );
     if (global_update_items~'categories' != null || global_update_items~'display' != null,
         if (global_category_page_count > 1 && global_current_category_page + 1 != global_category_page_count,
-            inventory_set(warp_screen, 8, 1, 'minecraft:arrow', '{components:{"minecraft:custom_name":{italic:false, text:"下一页"}},count:1,id:"minecraft:arrow"}');
+            inventory_set(warp_screen, 8, 1, 'minecraft:arrow', str('{components:{"minecraft:custom_name":{italic:false, text:"%s"}},count:1,id:"minecraft:arrow"}'), get_translation('update_screen.next_page'));
             , // else
             inventory_set(warp_screen, 8, 1, 'minecraft:air');
         );
         if (global_current_category_page > 0,
-            inventory_set(warp_screen, 0, 1, 'minecraft:arrow', '{components:{"minecraft:custom_name":{italic:false, text:"上一页"}},count:1,id:"minecraft:arrow"}');
+            inventory_set(warp_screen, 0, 1, 'minecraft:arrow', str('{components:{"minecraft:custom_name":{italic:false, text:"%s"}},count:1,id:"minecraft:arrow"}'), get_translation('update_screen.previous_page'));
             , // else
             inventory_set(warp_screen, 0, 1, 'minecraft:air');
         );
