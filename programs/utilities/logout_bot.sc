@@ -7,14 +7,28 @@ __config() -> {
     'command_permission' -> 'all',
 };
 
-global_FAKE_PLAYER_LOG_OUT_TIME_OUT = 300; // the duration, in seconds, that fake players wait to log out if all real players left
+// the duration, in seconds, that fake players wait to log out if all real players left
+global_FAKE_PLAYER_LOG_OUT_TIME_OUT = 300; 
+// the required block states that must be present for the App to log out bots
+global_REQUIRED_BLOCK_STATES = [ 
+    // Format: 
+    // [block_id, pos_x, pos_y, pos_z, block_state_id, block_state_value, dimension]
+    // Note: namespace is NOT REQUIRED;
+    //     'minecraft:stone' is not valid, but 'stone' is
+    //     dimension's namespace is OPTIONAL;
+    //
+    // Example: check if redstone lamp in overworld at (11, 45, 14) is lit
+    // ['minecraft:redstone_lamp', 11, 45, 14, 'lit', false, 'minecraft:overworld'],
+];
 
 global_translations = {
     'en_us' -> {
+        'list_saved_players.pretext' -> 'Saved players: ',
         'list_commands.pretext' -> '\nThe game will run the following commands when the first player joins the game:\n',
-        'list_commands.posttext' -> 'If the above list has any unwanted commands, use /player <ID> stop for corresponding bot (case sensitive).\n',
+        'list_commands.posttext' -> 'If the above list has any unwanted commands, use `/player <ID> stop` for corresponding bot (case sensitive).\n',
     },
     'zh_cn' -> {
+        'list_saved_players.pretext' -> '已存储假人：',
         'list_commands.pretext' -> '\n游戏将会在所有真人玩家退出并重新加入时，运行以下命令：\n',
         'list_commands.posttext' -> '若有不希望重进时运行的命令，对相应假人使用/player <ID> stop即可（区分大小写）。\n',
     },
@@ -44,46 +58,77 @@ run_player_commands() -> (
     );
 );
 
+check_required_block_states() -> (
+    all_conditions_met = true;
+    for (global_REQUIRED_BLOCK_STATES,
+        in_dimension(_:6,
+            this_block = block(
+                _:1,
+                _:2,
+                _:3
+            );
+            if (
+                this_block != _:0 ||
+                block_state(this_block, _:4) != _:5
+            ,
+                all_conditions_met = false;
+            );
+        );
+    );
+    all_conditions_met;
+);
+
 __spawn_players() -> (
-   data = load_app_data();
-   if (data && data:'players',
-      data = parse_nbt(data:'players');
-      for (data,
-         for([str('player %s spawn at %f %f %f facing %f %f in %s',
-                  _:'name', _:'x', _:'y', _:'z', _:'yaw', _:'pitch', _:'dim')],
-            logger('info', _);
-            run(_);
-         );
-//         modify(player(_:'name'), 'flying', _:'fly')
-      );
-   );
-   schedule(30, 'run_player_commands');
+    data = read_file('data', 'json');
+    print(data);
+    if (data && data:'players',
+        data = data:'players';
+        for (data,
+            spawn_command = str(
+                'player %s spawn at %f %f %f facing %f %f in %s',
+                _:'name',
+                _:'x',
+                _:'y',
+                _:'z',
+                _:'yaw',
+                _:'pitch',
+                _:'dim'
+            );
+            logger('info', spawn_command);
+            run(spawn_command);
+    //         modify(player(_:'name'), 'flying', _:'fly')
+        );
+    );
+    schedule(30, 'run_player_commands');
 );
 
 __save_players() -> (
-   data = nbt('{players:[]}');
-   saved = [];
-   if (read_file('commands', 'json');,
-      commands = read_file('commands', 'json');,
-      // else
-      commands = [];
-   );
-   for (filter(player('all'), _~'player_type' == 'fake'),
-      pdata = nbt('{}');
-      pdata:'name' = _~'name';
-      pdata:'dim' = _~'dimension';
-      pdata:'x' = _~'x';
-      pdata:'y' = _~'y';
-      pdata:'z' = _~'z';
-      pdata:'yaw' = _~'yaw';
-      pdata:'pitch' = _~'pitch';
-      pdata:'fly' = _~'flying';
-      put(data, 'players', pdata, -1);
-      saved += _~'name';
-      commands += str('gamemode', _~'gamemode', player)
-   );
-   store_app_data(data);
-   if (saved, logger('info', '[logout_bot App] Saved '+saved+' for next startup'));
+    data = {'players' -> []};
+    saved = [];
+    if (read_file('commands', 'json');,
+        commands = read_file('commands', 'json');,
+        // else
+        commands = [];
+    );
+    for (filter(player('all'), _~'player_type' == 'fake'),
+        pdata = {};
+        pdata:'name' = _~'name';
+        pdata:'dim' = _~'dimension';
+        pdata:'x' = _~'x';
+        pdata:'y' = _~'y';
+        pdata:'z' = _~'z';
+        pdata:'yaw' = _~'yaw';
+        pdata:'pitch' = _~'pitch';
+        pdata:'fly' = _~'flying';
+        data:'players' += pdata;
+        saved += _~'name';
+        commands += str('gamemode', _~'gamemode', player);
+    );
+    write_file('data', 'json', data);
+    if (saved, 
+        logger('info', '[logout_bot App] Saved ' + saved + '.');
+        print('Saved ' + saved + '.');
+    );
 );
 
 // __on_server_starts() -> (
@@ -195,28 +240,45 @@ global_last_player_disconnect_at = 0;
 
 __on_player_disconnects(player, reason) -> (
     if (player~'player_type' != 'fake',
-        // __save_players();
-        schedule(20, _() -> ( // wait one tick to make sure player has properly logged out
+        schedule(20, _() -> ( // wait one second to make sure player has properly logged out
+            __save_players();
             if (length(filter(player('all'), _~'player_type' != 'fake')) == 0,
                 logger('[logout_bot App] No real players exist. Fake players are scheduled to log out soon...');
                 global_last_player_disconnect_at = time(); // record the time last player disconnects
-                // wait for a certain time to check
-                schedule(global_FAKE_PLAYER_LOG_OUT_TIME_OUT * 20 - 20, _(last_player_disconnect_at) -> (
-                    // if no real players exist AND after waiting for a certain time, the time recorded is still the same (meaning no player logged in during this period), log out fake players
-                    if (length(filter(player('all'), _~'player_type' != 'fake')) == 0 && last_player_disconnect_at == global_last_player_disconnect_at,
-                        logger('[logout_bot App] Considering no real players exist for ' + global_FAKE_PLAYER_LOG_OUT_TIME_OUT + ' seconds, log out bots.');
-                        for (filter(player('all'), _~'player_type' == 'fake'),
-                            run(str('/player %s kill', _~'name'))
-                        );
-                    );
-                ), global_last_player_disconnect_at);
+                // wait for a certain amount of time to check
+                schedule(global_FAKE_PLAYER_LOG_OUT_TIME_OUT * 20 - 20, 'recursive_check_and_log_out', global_last_player_disconnect_at, 0);
             );
         ));
     );
 );
 
+recursive_check_and_log_out(last_player_disconnect_at, number_of_attempts) -> (
+    // if no real players exist, 
+    // AND after waiting for a certain time, the time recorded is still the same (meaning no player logged in during this period),
+    // check if required block states are still valid
+    // 
+    // if player exists, interrupt the recursive check
+    // if required block states are not valid, continue the recursive check
+    //
+    // if all conditions are met, log out fake players
+    if (length(filter(player('all'), _~'player_type' != 'fake')) == 0 && last_player_disconnect_at == global_last_player_disconnect_at,
+        if (check_required_block_states(),
+            // Now log out fake players
+            logger('[logout_bot App] Considering no real players exist for ' + (time() - last_player_disconnect_at) / 1000 + ' seconds, log out bots.');
+            for (filter(player('all'), _~'player_type' == 'fake'),
+                run(str('/player %s kill', _~'name'))
+            );
+        , // else
+            number_of_attempts += 1;
+            schedule(20, 'recursive_check_and_log_out', last_player_disconnect_at, number_of_attempts);
+            if (number_of_attempts % 120 == 0,
+                logger('[logout_bot App] It has been ' + number_of_attempts + ' attempts to check if required block states are valid. Real players disconnects ' + (time() - last_player_disconnect_at) / 1000 + ' seconds ago.');
+            );
+        );
+    );
+);
+
 __on_player_dies(player) -> (
-    logger('[logout_bot App] Running "player_dies"...');
     if (player~'player_type' == 'fake',
         schedule(20, '__save_players');
         if (read_file('commands', 'json');,
@@ -231,7 +293,6 @@ __on_player_dies(player) -> (
             write_file('commands', 'json', commands);
         );
     );
-    logger('[logout_bot App] Finish "player_dies"');
 );
 
 __on_player_connects(player) -> (
@@ -240,5 +301,14 @@ __on_player_connects(player) -> (
         if (length(fake_players) == 0,
             __spawn_players();
         );
+    );
+);
+
+__on_statistic(player, category, event, value) -> (
+    // If the player is a real player and there are no fake players,
+    // spawn fake players
+    // print('__on_statistic is triggered.');
+    if (player~'player_type' != 'fake' && length(filter(player('all'), _~'player_type' == 'fake')) == 0,
+        schedule(20, '__spawn_players');
     );
 );
