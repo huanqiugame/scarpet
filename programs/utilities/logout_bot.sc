@@ -18,7 +18,7 @@ global_REQUIRED_BLOCK_STATES = [
     //     dimension's namespace is OPTIONAL;
     //
     // Example: check if redstone lamp in overworld at (11, 45, 14) is lit
-    // ['minecraft:redstone_lamp', 11, 45, 14, 'lit', false, 'minecraft:overworld'],
+    // ['redstone_lamp', 11, 45, 14, 'lit', false, 'minecraft:overworld'],
 ];
 
 global_translations = {
@@ -80,7 +80,6 @@ check_required_block_states() -> (
 
 __spawn_players() -> (
     data = read_file('data', 'json');
-    print(data);
     if (data && data:'players',
         data = data:'players';
         for (data,
@@ -241,7 +240,6 @@ global_last_player_disconnect_at = 0;
 __on_player_disconnects(player, reason) -> (
     if (player~'player_type' != 'fake',
         schedule(20, _() -> ( // wait one second to make sure player has properly logged out
-            __save_players();
             if (length(filter(player('all'), _~'player_type' != 'fake')) == 0,
                 logger('[logout_bot App] No real players exist. Fake players are scheduled to log out soon...');
                 global_last_player_disconnect_at = time(); // record the time last player disconnects
